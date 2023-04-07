@@ -6,6 +6,7 @@ package com.example.http4kdemo
 import org.http4k.core.*
 import org.http4k.core.Method.*
 import org.http4k.routing.bind
+import org.http4k.routing.path
 import org.http4k.routing.routes
 import org.http4k.server.SunHttp
 import org.http4k.server.asServer
