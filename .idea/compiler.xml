@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel target="11">
+      <module name="http4kVanillaCrud" target="19" />
+      <module name="prompts.examples.http4k-vanilla-crud.main" target="19" />
+      <module name="prompts.examples.http4k-vanilla-crud.test" target="19" />
+      <module name="prompts.examples.Http4kVanillaRest" target="19" />
+      <module name="prompts.examples.Http4kVanillaRest.main" target="19" />
+      <module name="prompts.examples.Http4kVanillaRest.test" target="19" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
