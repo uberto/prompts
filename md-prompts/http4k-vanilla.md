@@ -107,7 +107,15 @@ Filters in Http4k are functions of type (HttpHandler) -> HttpHandler.
 
 They are very convenient to implement some logic common to many routes, for example collecting metrics, authentication, caching, etc.
 
-Filters can performs pre/post processing on a request or response. We can compose filters using the function `then()`
+Filters can performs pre/post processing on a request or response. 
+
+We can compose filters together to form another filter using 
+
+`val filter3 = filter1.then(filter2)`
+
+or decorate an HttpHandler with a filter to create another HttpHandler using 
+
+`val decordatedHttpHandler = filter1.then(httpHandler)`
 
 In this example we can create a filter to measure the timing to process each request:
 
