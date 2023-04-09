@@ -32,64 +32,47 @@ import org.http4k.server.asServer
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
-data class Order(val id: Int, val user: String, val stock: String, val price: Double, val type: OrderType)
-enum class OrderType { BID, ASK }
-data class MatchedOrder(
-    val id: Int,
-    val stock: String,
-    val price: Double,
-    val buyer: String,
-    val seller: String,
-    val timestamp: LocalDateTime
-)
+data class Bid(val stock: String, val price: Double, val user: String)
+data class Ask(val stock: String, val price: Double, val user: String)
+data class Order(val stock: String, val price: Double, val buyer: String, val seller: String, val time: LocalDateTime)
 
-val orderIdCounter = AtomicInteger()
-val matchedOrderIdCounter = AtomicInteger()
+val bidOrdersByStock = mutableMapOf<String, MutableList<Bid>>()
+val askOrdersByStock = mutableMapOf<String, MutableList<Ask>>()
+val matchedOrders = mutableListOf<Order>()
 
-val bidOrders = mutableListOf<Order>()
-val askOrders = mutableListOf<Order>()
-val matchedOrders = mutableListOf<MatchedOrder>()
-
-fun createOrder(user: String, stock: String, price: Double, type: OrderType): Response {
-    val order = Order(orderIdCounter.incrementAndGet(), user, stock, price, type)
-    when (type) {
-        OrderType.BID -> bidOrders.add(order)
-        OrderType.ASK -> askOrders.add(order)
-    }
-    return matchOrders(order)
+fun addBidOrder(bid: Bid) {
+    bidOrdersByStock.getOrPut(bid.stock) { mutableListOf() }.add(bid)
+    bidOrdersByStock[bid.stock]?.sortByDescending { it.price }
 }
 
-fun matchOrders(order: Order): Response {
-    val bids = bidOrders.sortedByDescending { it.price }
-    val asks = askOrders.sortedBy { it.price }
-
-    for (bid in bids) {
-        for (ask in asks) {
-            if (bid.stock == ask.stock && bid.price >= ask.price) {
-                val matchPrice = (bid.price + ask.price) / 2
-                val matchedOrder = MatchedOrder(
-                    matchedOrderIdCounter.incrementAndGet(),
-                    bid.stock,
-                    matchPrice,
-                    bid.user,
-                    ask.user,
-                    LocalDateTime.now()
-                )
-                matchedOrders.add(matchedOrder)
-
-                bidOrders.remove(bid)
-                askOrders.remove(ask)
-
-                if (order.id == bid.id || order.id == ask.id) {
-                    return Response(OK).body("Matched order: $matchedOrder")
-                }
-            }
-        }
-    }
-
-    return Response(OK).body("Created")
+fun addAskOrder(ask: Ask) {
+    askOrdersByStock.getOrPut(ask.stock) { mutableListOf() }.add(ask)
+    askOrdersByStock[ask.stock]?.sortBy { it.price }
 }
 
+fun matchOrders(stock: String): Order? {
+    val bidOrders = bidOrdersByStock[stock]
+    val askOrders = askOrdersByStock[stock]
+
+    if (bidOrders.isNullOrEmpty() || askOrders.isNullOrEmpty()) {
+        return null
+    }
+
+    val highestBid = bidOrders.first()
+    val lowestAsk = askOrders.first()
+
+    if (highestBid.price >= lowestAsk.price) {
+        bidOrders.removeAt(0)
+        askOrders.removeAt(0)
+
+        val matchedPrice = (highestBid.price + lowestAsk.price) / 2
+        val order = Order(stock, matchedPrice, highestBid.user, lowestAsk.user, LocalDateTime.now())
+        matchedOrders.add(order)
+        return order
+    }
+
+    return null
+}
 val exchangeRoutes: RoutingHttpHandler = routes(
     "/{stock}/bid/{price}" bind POST to { req: Request ->
         val user = req.header("WWW-Authenticate")
