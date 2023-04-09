@@ -2,7 +2,7 @@
 
 
 /*
-Can you create the backend for a simple exchange with these api:
+Can you create the backend in Kotlin using http4k for a simple exchange with these api:
 /{stock}/bid/{price}    <- order to sell a stock to a minimum price
 /{stock}/ask/{price}   <- order to buy a stock to a max price
 
@@ -14,6 +14,9 @@ then there are other 2 apis:
 /{stock}/orders  <- list of matched orders ordered by time
 /{stock}/depth <- list of standing bids and asks not matched
 
+
+I'll give you a description of what is http4k and some examples with the style I want you to follow when writing the applicaiton
+ ---prompt vanilla
  */
 
 import org.http4k.core.*
