@@ -50,6 +50,15 @@ fun addAskOrder(ask: Ask) {
     askOrdersByStock[ask.stock]?.sortBy { it.price }
 }
 
+fun createOrder(user: String, stock: String, price: Double, type: OrderType): Response {
+    val order = Order(orderIdCounter.incrementAndGet(), user, stock, price, type)
+    when (type) {
+        OrderType.BID -> bidOrders.add(order)
+        OrderType.ASK -> askOrders.add(order)
+    }
+    return matchOrders(order)
+}
+
 fun matchOrders(stock: String): Order? {
     val bidOrders = bidOrdersByStock[stock]
     val askOrders = askOrdersByStock[stock]
@@ -107,8 +116,6 @@ val exchangeRoutes: RoutingHttpHandler = routes(
             Response(BAD_REQUEST).body("Invalid stock symbol.")
         }
     },
-
-    kotlin
 
     "/{stock}/depth" bind GET to { req: Request ->
         val stock = req.path("stock")
