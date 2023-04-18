@@ -32,7 +32,7 @@ fun prepareRoutes(hub: UserHub) =
         },
         "/user" bind POST to { req: Request ->
             val userData = req.bodyString()
-            if (userData != null) {
+            if (!userData..isBlankOrNull()) {
                 val newId = newUser(userData)
                 Response(OK).bodyString()
             } else {
@@ -59,10 +59,10 @@ fun prepareRoutes(hub: UserHub) =
         "/products" bind GET to { req: Request ->
             val prodName = req.query("name")
             val user = req.header("WWW-Authenticate")
-            if (user == null) {
+            if (user.isBlankOrNull()) {
                 Response(UNAUTHORIZED)
             } else {
-                if (prodName == null) {
+                if (prodName.isBlankOrNull()) {
                     getAllProductsForUser(user)
                 } else {
                     getProductByName(user, prodName)
@@ -71,14 +71,10 @@ fun prepareRoutes(hub: UserHub) =
         }
     )
 
-fun main() {
-    val hub =
-    val userRoutes = prepareRoutes(hub)
-    ServerFilters.Cors(UnsafeGlobalPermissive)
-        .then(ServerFilters.BasicAuth("realm", "username", "password"))
-        .then(userRoutes)
-        .asServer(Jetty(9000)).start()
+class RealUserHub(): UserHub {
+    //domain logic here
 }
+
 ~~~
 
 Filters in Http4k are functions of type (HttpHandler) -> HttpHandler.
@@ -133,11 +129,11 @@ Finally, we can compose routes and filters to create our application:
 
 ~~~kotlin
 fun main() {
-    val compositeRoutes = routes(productRoutes, userRoutes)
-
+    val hub = RealUserHub()
+    val userRoutes = prepareRoutes(hub)
     ServerFilters.Cors(UnsafeGlobalPermissive)
         .then(ServerFilters.BasicAuth("realm", "username", "password"))
-        .then(compositeRoutes)
+        .then(userRoutes)
         .asServer(Jetty(9000)).start()
 }
 ~~~
