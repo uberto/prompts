@@ -54,42 +54,10 @@ object JProduct : JAny<Product>() { // 2
 ## Avoid Exceptions
 
 When failing to parse a Json, Kondor is not throwing any exception, instead `fromJson` and `fromJsonNode` methods return
-an `Outcome<T>` instead of a simple `T`. Why is that?
+an `Outcome<T>` instead of a simple `T`. 
 
-`Outcome` is an example of the *Either* monad specialized for error handling patterns, if you are not familiar with it, here there are 5 ways to handle errors depending on the case:
+`Outcome` is an example of the *Either* monad specialized for error handling patterns, this is how handle errors:
 
-1. orThrow()
-
-```kotlin
-JCustomer.parseJson(jsonString).orThrow()
-```
-
-this throws an exception if there is an error.
-
-1. orNull()
-
-```kotlin
-JCustomer.parseJson(jsonString).orNull()
-   ?.let { customer ->
-      //do something only if successful
-   }
-
-```
-
-this returns null if there is an error, it's not great because the error is lost but it can be convenient sometime.
-1. onFailure{}
-
-```kotlin
-val customer = JCustomer.parseJson(jsonString)
-   .onFailure { error ->
-      log(error)
-      return
-   }
-```
-
-using `onFailure` we can return from the calling function (non-local return) in case of errors.
-
-1. transform{} + recover{}
 
 ```kotlin
 val htmlPage = JCustomer.parseJson(jsonString)
@@ -101,10 +69,6 @@ val htmlPage = JCustomer.parseJson(jsonString)
 ```
 
 using `transform` we can convert the `Outcome<Customer>` to something else, for example a `Outcome<HtmlPage>`, then using `recover` we can convert the error result to the same type and remove the `Outcome`.
-
-This is my favorite way to handle errors.
-
-There are many other implementations of the Either monad in Kotlin (Result4k, Arrows, Kotlin-Result etc...), rather than importing one of these I created a new one, so you can convert Kondor `Outcome` to your specific result type. I choose a different name to avoid clashing with `Result` in the Kotlin library which works differently but it will always be imported first by the IDE. I also don't like `map` and `flatmap` be identical to the collections methods because when using a collection of results it becomes very confusing.
 
 ## Special Cases
 
@@ -293,47 +257,3 @@ The result will be a Json like this:
 }
 ```
 
-### Custom collections
-
-If you have a custom collection:
-
-```kotlin
-class Products : ArrayList<Product>() {
-   fun total(): Double = sumOf { it.price ?: 0.0 }
-
-   companion object {
-        fun fromIterable(from: Iterable<Product>): Products =
-            from.fold(Products()) { acc, p -> acc.apply { add(p) } }
-    }
-}
-```
-
-You can easily create a converter for it that will render it as a normal array:
-
-```kotlin
-object JProducts : JArray<Product, Products>() {
-   override val helper = JProduct
-
-   override fun convertToCollection(from: Iterable<Product>) =
-      Products.fromIterable(from)
-
-}
-```
-
-And it will be rendered as a standard Json array:
-
-```json
-[
-   {
-      "id": 175,
-      "long_description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididun",
-      "short-desc": "Good Stuff",
-      "price": 223.23
-   },
-   {
-      "id": 281,
-      "long_description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-      "short-desc": "Free Stuff"
-   }
-]
-```
