@@ -22,12 +22,12 @@ To use Kondor we need to define a Converter for each type (or class of types).
 Let's analyze an example in details:
 
 ```kotlin
-data class Product(val id: Int, val shortDesc: String, val longDesc: String, val price: Double?) // 1
+data class Product(val id: Int, val shortDesc: String, val longDesc: List<String>, val price: Double?) // 1
 
 object JProduct : JAny<Product>() { // 2
 
    val id by num(Product::id) // 3
-   val long_description by str(Product::longDesc) // 4
+   val long_description by array(Product::longDesc) // 4
    val `short-desc` by str(Product::shortDesc) // 5
    val price by num(Product::price) // 6
 
@@ -44,7 +44,7 @@ object JProduct : JAny<Product>() { // 2
 1. This is the class we want to serialize/deserialize
 2. Here we define the converter, inheriting from a `JAny<T>` where `T` is our type. If we want to serialize a collection we can start from `JList` or `JSet` and so on, we can also create new abstract converters.
 3. Inside the converter we need to define the fields as they will be saved in Json. For each field we need to specify the getter for the serialization, inside a function that represent the kind of Json node (boolean, number, string,array, object) and the specific converter needed for its type. If the converter or the getter is not correct it won't compile.
-4. The name of the field is taken from the variable name, `long_description` in this case
+4. The name of the field is taken from the variable name, `long_description` in this case. Array will use a JSON array
 5. Using ticks we can also use names illegal for variables in Kotlin
 6. Nullable/optional fields are handled automatically.
 7. We then need to define the method to create our objects from Json fields. If we are only interested in serialization we can leave the method empty.
@@ -173,21 +173,8 @@ Now we need to create a type which is same as `FileInfo` but with a boolean fiel
 data class SelectedFile(val selected: Boolean, val file: FileInfo)
 ```
 
-Writing a converter we will get this json format:
 
-```json
-{
-   "selected": true,
-   "file": {
-      "name": "filename",
-      "date": 0,
-      "size": 123,
-      "folderPath": "/"
-   }
-}
-```
-
-But instead we want something simpler:
+We want to flatten the fields together:
 
 ```json
 {
